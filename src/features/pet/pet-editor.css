@@ -1,0 +1,335 @@
+.customize-pet {
+  width: 100%;
+  margin-top: 17px;
+  padding: 11px;
+  background: #294b5b;
+  color: #f7e8d7;
+  border-radius: 3px;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+.customize-pet:hover {
+  background: #3a6375;
+}
+.pet-editor {
+  width: min(880px, 100%);
+  max-height: 94dvh;
+  overflow: auto;
+  background: var(--paper);
+  color: #29414b;
+  border-radius: 4px 32px 4px 4px;
+  box-shadow: 0 24px 100px #00121c66;
+  color-scheme: light;
+}
+.pet-editor-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 25px 28px 20px;
+  border-bottom: 1px solid #c9c4b7;
+}
+.pet-editor-heading small {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #876346;
+}
+.pet-editor h2 {
+  font-family: Georgia, 'SimSun', serif;
+  font-weight: 400;
+  font-size: 27px;
+  letter-spacing: 1px;
+  margin: 10px 0;
+}
+.pet-editor-heading p {
+  font-size: 11px;
+  color: #5e7177;
+  margin: 0;
+  line-height: 1.8;
+}
+.editor-close {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  background: transparent;
+  font-size: 29px;
+  color: #526f7b;
+}
+.pet-editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.pet-preview-panel {
+  position: relative;
+  min-width: 0;
+  background: radial-gradient(ellipse at 50% 50%, #64818e, #253f50);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 25px 14px;
+  color: #f8ebdf;
+}
+.pet-preview-panel canvas {
+  display: block;
+  width: 100%;
+  height: 360px;
+  touch-action: none;
+}
+.preview-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin-top: 12px;
+  color: #f0d1b7;
+}
+.preview-motions {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.preview-motions button {
+  background: #213e4c;
+  color: #dbe7e9;
+  border: 1px solid #728995;
+  padding: 10px 13px;
+  border-radius: 3px;
+  font-size: 11px;
+  min-height: 40px;
+}
+.preview-motions button[aria-pressed='true'] {
+  background: var(--accent);
+  color: #352d29;
+  border-color: var(--accent);
+}
+.preview-hint {
+  font-size: 10px;
+  margin-top: 17px;
+  color: #d1dde1;
+  letter-spacing: 1px;
+}
+.pet-editor-form {
+  padding: 20px 25px 22px;
+  min-width: 0;
+}
+.pet-editor fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0 0 19px;
+  min-width: 0;
+}
+.pet-editor legend {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #7f5c43;
+  padding: 0;
+  margin-bottom: 12px;
+}
+.editor-species {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.editor-species button {
+  padding: 11px 8px;
+  background: #e5ddce;
+  color: #37525e;
+  border: 1px solid #bfc4bd;
+  text-align: left;
+  border-radius: 3px;
+  font-size: 13px;
+}
+.editor-species button[aria-pressed='true'] {
+  border-color: #b8724e;
+  background: #eed4bd;
+}
+.editor-species small {
+  display: block;
+  margin-top: 6px;
+  font-size: 9px;
+  color: #576e77;
+  line-height: 1.5;
+}
+.editor-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  margin-top: 10px;
+}
+.editor-field input,
+.editor-field select {
+  border: 1px solid #b3bdb9;
+  color: #294956;
+  background: #faf4e9;
+  padding: 9px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  min-width: 0;
+  width: 72%;
+}
+.coat-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.coat-presets button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  background: transparent;
+  font-size: 10px;
+  color: #4b636c;
+}
+.coat-presets span {
+  width: 29px;
+  height: 29px;
+  border-radius: 50%;
+  background: var(--swatch);
+  box-shadow: 0 0 0 1px #7a817b55;
+  border: 3px solid var(--paper);
+}
+.coat-presets button[aria-pressed='true'] span {
+  outline: 2px solid #a15f3c;
+}
+.editor-colors {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 9px;
+}
+.editor-colors label {
+  font-size: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #526b75;
+}
+.editor-colors input {
+  width: 100%;
+  height: 33px;
+  cursor: pointer;
+  border: 1px solid #b5bcb6;
+  background: #fff3e4;
+  padding: 3px;
+  border-radius: 4px;
+}
+.editor-colors input:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.editor-size {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  font-size: 11px;
+  gap: 8px;
+  margin-top: 15px;
+}
+.editor-size input {
+  width: 100%;
+  accent-color: #9d5b3b;
+  height: 20px;
+  cursor: pointer;
+}
+.editor-collar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 13px;
+  font-size: 11px;
+}
+.editor-collar input {
+  accent-color: #9d5b3b;
+  width: 16px;
+  height: 16px;
+}
+.editor-error {
+  color: #a63028;
+  font-size: 11px;
+  line-height: 1.7;
+  margin: 7px 0;
+}
+.editor-error:empty {
+  display: none;
+}
+.editor-files {
+  display: flex;
+  justify-content: space-between;
+  gap: 9px;
+  padding-top: 12px;
+  border-top: 1px solid #c8c8b9;
+}
+.editor-files button {
+  padding: 7px 0;
+  min-height: 34px;
+  background: transparent;
+  font-size: 10px;
+  color: #6c4b35;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.editor-submit small {
+  display: block;
+  font-size: 9px;
+  line-height: 1.6;
+  color: #61727a;
+  margin: 14px 0 9px;
+}
+.editor-submit .primary {
+  min-height: 44px;
+}
+@media (max-width: 650px) {
+  .pet-editor-backdrop {
+    padding: 10px;
+  }
+  .pet-editor {
+    max-height: 96dvh;
+  }
+  .pet-editor-heading {
+    padding: 17px 18px 15px;
+  }
+  .pet-editor h2 {
+    font-size: 23px;
+  }
+  .pet-editor-heading p {
+    font-size: 10px;
+  }
+  .pet-editor-grid {
+    grid-template-columns: 1fr;
+  }
+  .pet-preview-panel {
+    padding: 13px 10px;
+  }
+  .pet-preview-panel canvas {
+    height: 235px;
+  }
+  .preview-label {
+    font-size: 8px;
+    margin-top: 2px;
+  }
+  .preview-hint {
+    font-size: 9px;
+    margin-top: 9px;
+  }
+  .preview-motions button {
+    padding: 8px 13px;
+    min-height: 38px;
+  }
+  .pet-editor-form {
+    padding: 20px;
+  }
+  .customize-pet {
+    font-size: 10px;
+    padding: 10px 4px;
+  }
+  .editor-files button {
+    min-height: 44px;
+  }
+  .editor-colors input {
+    height: 42px;
+  }
+}
