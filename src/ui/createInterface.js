@@ -7,6 +7,7 @@ import {
   PET_SPECIES,
 } from '../features/pet/profile.js';
 import { saveGameState } from '../core/storage.js';
+import { releases } from '../config/releases.js';
 export function createInterface(state, { onPetChanged }) {
   const $ = (selector) => document.querySelector(selector);
   $('#app').innerHTML = `<header>
@@ -139,6 +140,7 @@ export function createInterface(state, { onPetChanged }) {
 </div>
 <footer>
 <span>${icon('cloud')}陪伴记录自动保存在这台设备</span>
+<button class="release-trigger" id="release-log">${icon('book-open')}系统更新日志 <span>v${releases[0].version}</span></button>
 <span>用一点点时间，换一整天的治愈 ${icon('heart')}</span>
 </footer>
 </main>
@@ -188,6 +190,62 @@ export function createInterface(state, { onPetChanged }) {
       if (e.target.classList.contains('modal-backdrop')) $('#modal-root').innerHTML = '';
     };
   }
+  $('#release-log').onclick = () => {
+    showModal(
+      `<div class="release-heading"><small>PAWSTICE / WHAT’S NEW</small><h2 id="release-title">小屋在慢慢长大</h2><p>系统更新日志 · 记录每一次细微的进步</p></div><div class="release-list"></div>`,
+    );
+    const modal = $('.modal');
+    modal.classList.add('release-modal');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'release-title');
+    releases.forEach((release, index) => {
+      const entry = document.createElement('article');
+      entry.className = 'release-entry';
+      const meta = document.createElement('div');
+      meta.className = 'release-meta';
+      const version = document.createElement('strong');
+      version.textContent = `v${release.version}${index === 0 ? ' · 当前版本' : ''}`;
+      const date = document.createElement('time');
+      date.dateTime = release.date;
+      date.textContent = release.date;
+      meta.append(version, date);
+      const title = document.createElement('h3');
+      title.textContent = release.title;
+      entry.append(meta, title);
+      release.changes.forEach((group) => {
+        const heading = document.createElement('h4');
+        heading.textContent = group.type;
+        const list = document.createElement('ul');
+        group.items.forEach((text) => {
+          const item = document.createElement('li');
+          item.textContent = text;
+          list.append(item);
+        });
+        entry.append(heading, list);
+      });
+      $('.release-list').append(entry);
+    });
+    const close = () => {
+      $('#modal-root').replaceChildren();
+      $('#release-log').focus();
+    };
+    $('.close').onclick = close;
+    $('.modal-backdrop').onclick = (e) => {
+      if (e.target === e.currentTarget) close();
+    };
+    modal.onkeydown = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        close();
+      }
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        $('.close').focus();
+      }
+    };
+    $('.close').focus();
+  };
   $('#change').onclick = () => {
     let selected = state.pet;
     showModal(
