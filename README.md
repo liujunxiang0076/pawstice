@@ -84,3 +84,13 @@ docs/                      架构、产品、美术与验证记录
 ## 系统更新日志维护
 
 游戏底部的「系统更新日志」展示版本记录。编辑 `src/config/releases.js`，将新版本放在最前，按「新增 / 优化 / 修复」记录实际变更；同步更新 `package.json` 与锁文件的版本，再运行 `npm run changelog` 生成 [CHANGELOG.md](CHANGELOG.md)。`npm test` 会检查版本与文档一致性。
+
+## Vercel 部署
+
+在线体验：[pawstice-ten.vercel.app](https://pawstice-ten.vercel.app) · [Vercel 控制台](https://vercel.com/liu-projects/pawstice)
+
+项目关联 GitHub 仓库 `liujunxiang0076/pawstice`，Vercel 项目为 `liu-projects/pawstice`。推送 `main` 分支自动触发正式部署，其他分支用于预览部署。
+
+`vercel.json` 固定 Vite 构建配置：安装执行 `npm ci`，构建执行 `npm run build`，发布目录为 `dist`。当前游戏无需服务端环境变量，存档保存在访问者的浏览器中；本地与线上域名的存档互相独立。
+
+本地使用 Vercel CLI 时，先执行 `npx vercel link --project pawstice --scope liu-projects`。`.vercel/` 和 `.env.*` 仅用于本地配置，不提交到仓库。
