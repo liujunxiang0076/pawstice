@@ -91,6 +91,36 @@ export function createPetRig(profile) {
   bodyGeo.computeVertexNormals();
   const body = mesh(bodyGeo, bodyFur);
   body.name = 'continuous-torso';
+  // Axial muscle motion stays continuous across the coat, without separate body balls.
+  const restTorso = Float32Array.from(p);
+  function deformPositions(rest, target, front, rear, bend) {
+    for (let i = 0; i < rest.length; i += 3) {
+      const z = rest[i + 2];
+      const f = Math.exp(-(((z - 0.24) / 0.24) ** 2));
+      const r = Math.exp(-(((z + 0.29) / 0.23) ** 2));
+      target[i] = rest[i] + bend * (f - r) * 0.018;
+      target[i + 1] = rest[i + 1] + (front * f + rear * r) * 0.018;
+      target[i + 2] = z;
+    }
+  }
+  bodyGeo.morphAttributes.position = [];
+  bodyGeo.morphAttributes.normal = [];
+  for (const pose of [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+  ]) {
+    const positions = new Float32Array(restTorso.length);
+    deformPositions(restTorso, positions, ...pose);
+    const target = bodyGeo.clone();
+    target.morphAttributes = {};
+    target.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    target.computeVertexNormals();
+    bodyGeo.morphAttributes.position.push(target.getAttribute('position'));
+    bodyGeo.morphAttributes.normal.push(target.getAttribute('normal'));
+    target.dispose();
+  }
+  body.updateMorphTargets();
   // Sparse short guard hairs add a soft silhouette with one extra draw call.
   const hairPositions = [],
     hairColors = [];
@@ -132,10 +162,11 @@ export function createPetRig(profile) {
   geometries.add(hairGeo);
   materials.add(hairMat);
   body.add(new THREE.LineSegments(hairGeo, hairMat));
+  const restHair = Float32Array.from(hairPositions);
   ellipsoid(points[0][1], points[0][2], 0.025, fur, 0, points[0][3], points[0][0]);
 
   // Low chest bib and sloping neck merge into the torso.
-  ellipsoid(cat ? 0.115 : 0.17, 0.2, 0.14, cream, 0, 0.52, 0.31);
+  ellipsoid(cat ? 0.105 : 0.155, 0.18, 0.105, cream, 0, 0.56, 0.31);
   const neck = ellipsoid(cat ? 0.14 : 0.18, cat ? 0.24 : 0.26, 0.16, fur, 0, 0.74, 0.35);
   neck.rotation.x = 0.23;
   const head = new THREE.Group();
@@ -281,23 +312,70 @@ export function createPetRig(profile) {
       const hind = z < 0;
       const hip = new THREE.Group();
       hip.position.set(x, 0.49, z);
+      hip.rotation.order = 'ZXY';
       group.add(hip);
       const upperLength = 0.25,
         lowerLength = 0.26;
-      ellipsoid(hind ? 0.092 : 0.062, 0.145, hind ? 0.106 : 0.063, fur, 0, -0.09, 0, hip);
+      ellipsoid(
+        hind ? (cat ? 0.077 : 0.092) : 0.055,
+        0.15,
+        hind ? 0.096 : 0.062,
+        fur,
+        0,
+        -0.085,
+        0,
+        hip,
+      );
+      const upper = mesh(
+        new THREE.CylinderGeometry(hind ? 0.061 : 0.047, 0.042, upperLength, 16),
+        fur,
+        hip,
+      );
+      upper.position.y = -upperLength * 0.5;
       const knee = new THREE.Group();
       knee.position.y = -upperLength;
       hip.add(knee);
-      ellipsoid(hind ? 0.047 : 0.043, 0.125, 0.047, fur, 0, -0.1, 0, knee);
+      ellipsoid(0.044, 0.049, 0.047, fur, 0, 0, 0, knee);
+      const shin = mesh(
+        new THREE.CylinderGeometry(0.042, cat ? 0.029 : 0.034, lowerLength, 16),
+        fur,
+        knee,
+      );
+      shin.position.y = -lowerLength * 0.5;
       const ankle = new THREE.Group();
       ankle.position.y = -lowerLength;
       knee.add(ankle);
       const pawMat = profile.pattern === 'socks' ? cream : fur;
-      ellipsoid(cat ? 0.061 : 0.071, 0.042, cat ? 0.085 : 0.095, pawMat, 0, 0, 0.026, ankle);
+      ellipsoid(cat ? 0.033 : 0.038, 0.052, 0.037, pawMat, 0, 0.01, 0.004, ankle);
+      const paw = ellipsoid(
+        cat ? 0.061 : 0.071,
+        0.042,
+        cat ? 0.085 : 0.095,
+        pawMat,
+        0,
+        0,
+        0.026,
+        ankle,
+      );
+      const pad = ellipsoid(cat ? 0.037 : 0.044, 0.01, 0.047, noseMat, 0, -0.032, 0.016, ankle);
+      pad.castShadow = false;
       for (const toe of [-1, 0, 1])
         ellipsoid(0.018, 0.025, 0.036, pawMat, toe * 0.027, -0.006, 0.08, ankle);
       legs.push(hip);
-      limbs.push({ hip, knee, ankle, upperLength, lowerLength, hind });
+      const scapula = !hind
+        ? ellipsoid(cat ? 0.033 : 0.045, 0.13, 0.075, fur, x * 0.93, 0.61, z - 0.015)
+        : null;
+      limbs.push({
+        hip,
+        knee,
+        ankle,
+        paw,
+        scapula,
+        restHip: hip.position.clone(),
+        upperLength,
+        lowerLength,
+        hind,
+      });
     }
   const tail = new THREE.Group();
   tail.position.set(0, 0.64, -0.4);
@@ -339,6 +417,14 @@ export function createPetRig(profile) {
     eyeLids,
     tail,
     restHead: head.position.clone(),
+    nose,
+    deformTorso(front, rear, bend) {
+      body.morphTargetInfluences[0] = front;
+      body.morphTargetInfluences[1] = rear;
+      body.morphTargetInfluences[2] = bend;
+      deformPositions(restHair, hairGeo.attributes.position.array, front, rear, bend);
+      hairGeo.attributes.position.needsUpdate = true;
+    },
     dispose() {
       if (disposed) return;
       disposed = true;

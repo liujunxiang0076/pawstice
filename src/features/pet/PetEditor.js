@@ -18,7 +18,9 @@ export function openPetEditor({ profile, onSave, onClose = () => {} }) {
     dirty = false,
     closed = false,
     frame = 0,
-    motion = 'idle';
+    motion = 'idle',
+    motionTime = 0,
+    previewSpeed = 0;
   const previousFocus = document.activeElement;
   const previousOverflow = document.body.style.overflow;
   const events = new AbortController();
@@ -29,6 +31,8 @@ export function openPetEditor({ profile, onSave, onClose = () => {} }) {
     <div class="pet-editor-grid"><div class="pet-preview-panel"><span class="preview-label">LIVE PORTRAIT · 实时预览</span><canvas aria-label="宠物 3D 预览，拖动可旋转"></canvas><div class="preview-motions">${[
       ['idle', '站立'],
       ['walk', '行走'],
+      ['transition', '起步 / 刹停'],
+      ['turn', '转弯'],
       ['pet', '撒娇'],
       ['sleep', '睡觉'],
     ]
@@ -164,7 +168,23 @@ export function openPetEditor({ profile, onSave, onClose = () => {} }) {
         pet.setProfile(draft);
         dirty = false;
       }
-      pet.update(motion, time, dt);
+      motionTime += dt;
+      const desiredSpeed =
+        motion === 'walk' || motion === 'turn' || (motion === 'transition' && motionTime % 5 < 2.8)
+          ? 0.78
+          : 0;
+      const oldSpeed = previewSpeed;
+      previewSpeed += THREE.MathUtils.clamp(desiredSpeed - previewSpeed, -1.6 * dt, 1.05 * dt);
+      const turnRate = motion === 'turn' ? 1.1 : 0;
+      pet.object3D.rotation.y += turnRate * dt;
+      const pose =
+        previewSpeed > 0.02 ? 'walk' : ['turn', 'transition'].includes(motion) ? 'idle' : motion;
+      pet.update(pose, time, dt, {
+        speed: previewSpeed,
+        acceleration: dt > 0 ? (previewSpeed - oldSpeed) / dt : 0,
+        turnRate,
+        preview: true,
+      });
       controls.update();
       renderer.render(scene, camera);
     }
@@ -208,6 +228,7 @@ export function openPetEditor({ profile, onSave, onClose = () => {} }) {
   overlay.querySelectorAll('[data-motion]').forEach((b) =>
     listen(b, 'click', () => {
       motion = b.dataset.motion;
+      motionTime = 0;
       overlay
         .querySelectorAll('[data-motion]')
         .forEach((x) => x.setAttribute('aria-pressed', String(x === b)));

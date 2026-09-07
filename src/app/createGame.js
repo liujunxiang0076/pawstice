@@ -8,6 +8,7 @@ import { createRoom } from '../scenes/room/createRoom.js';
 import { createInterface } from '../ui/createInterface.js';
 import { icon, refreshIcons } from '../ui/icons.js';
 import { taskDefs } from '../config/game.js';
+import { PetMotor } from '../features/pet/motion.js';
 
 export function createGame() {
   const $ = (selector) => document.querySelector(selector);
@@ -25,14 +26,15 @@ export function createGame() {
   const navigator = createNavigator(obstacles, () => petComponent.navigationRadius);
   const blocked = (x, z) => navigator.blocked(x, z);
   const route = (target) => navigator.findPath(petPos, target);
-  function groundHeight() {
-    const d = Math.hypot(petPos.x - 2.9, petPos.z + 0.83);
+  function groundHeight(x = petPos.x, z = petPos.z) {
+    const d = Math.hypot(x - 2.9, z + 0.83);
     return d < 0.73 ? 0.37 : d < 1.03 ? ((1.03 - d) / 0.3) * 0.37 : 0;
   }
   let pet,
     petComponent,
     petMeshes = [];
   let petPos = new THREE.Vector3(0.65, 0, 0.65);
+  const motor = new PetMotor();
   let path = [],
     mode = 'idle',
     pending = null,
@@ -72,6 +74,7 @@ export function createGame() {
     petMeshes = petComponent.pickables;
     interactables.push(...petMeshes);
     mode = 'idle';
+    motor.reset();
     path = [];
     pending = null;
     idleTime = 0;
@@ -191,6 +194,9 @@ export function createGame() {
     .querySelectorAll('[data-action]')
     .forEach((b) => (b.onclick = () => interact(b.dataset.action)));
   const raycaster = new THREE.Raycaster();
+  const pointerLook = new THREE.Vector3();
+  const lookPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.7);
+  let pointerLookUntil = 0;
   let pointerStart = null;
   listen(canvas, 'pointerdown', (e) => (pointerStart = { x: e.clientX, y: e.clientY }));
   listen(canvas, 'pointerup', (e) => {
@@ -218,6 +224,7 @@ export function createGame() {
       camera,
     );
     canvas.style.cursor = raycaster.intersectObjects(interactables).length ? 'pointer' : 'grab';
+    if (raycaster.ray.intersectPlane(lookPlane, pointerLook)) pointerLookUntil = total + 3;
   });
   function setNight(n) {
     state.night = n;
@@ -327,29 +334,14 @@ export function createGame() {
     back.visible = camera.position.z > -2.7;
     left.visible = camera.position.x > -3.5;
     if (mode === 'walk') {
-      const next = path[0];
-      if (next) {
-        const delta = next.clone().sub(petPos),
-          distance = delta.length();
-        if (distance < dt * 0.9) {
-          petPos.copy(next);
-          path.shift();
-        } else {
-          delta.normalize();
-          petPos.addScaledVector(delta, dt * 0.9);
-          const targetAngle = Math.atan2(delta.x, delta.z);
-          pet.rotation.y +=
-            Math.atan2(
-              Math.sin(targetAngle - pet.rotation.y),
-              Math.cos(targetAngle - pet.rotation.y),
-            ) * Math.min(1, dt * 12);
-        }
-      } else if (pending) beginAction();
-      else {
+      motor.step(petPos, pet, path, dt, state.pet);
+      if (!path.length && pending) beginAction();
+      else if (!path.length) {
         mode = 'idle';
         idleTime = 0;
       }
     } else if (mode === 'idle') {
+      motor.step(petPos, pet, [], dt, state.pet);
       idleTime += dt;
       if (idleTime > 12) {
         idleTime = 0;
@@ -376,11 +368,20 @@ export function createGame() {
           }
       }
     } else {
+      motor.step(petPos, pet, [], dt, state.pet);
       actionTime += dt;
-      if (mode === 'feed')
-        pet.rotation.y = Math.atan2(feeding.position.x - petPos.x, feeding.position.z - petPos.z);
-      else if (mode === 'wash') pet.rotation.y = Math.PI / 2;
-      else if (mode === 'play') {
+      if (mode === 'feed' || mode === 'wash') {
+        const targetAngle =
+          mode === 'feed'
+            ? Math.atan2(feeding.position.x - petPos.x, feeding.position.z - petPos.z)
+            : Math.PI / 2;
+        pet.rotation.y +=
+          Math.atan2(
+            Math.sin(targetAngle - pet.rotation.y),
+            Math.cos(targetAngle - pet.rotation.y),
+          ) *
+          (1 - Math.exp(-dt * 5));
+      } else if (mode === 'play') {
         ball.position.x = 1.35 + Math.sin(total * 4) * 0.24;
         ball.position.y = 0.19 + Math.abs(Math.sin(total * 4)) * 0.18;
         ball.rotation.z = total * 2;
@@ -389,7 +390,14 @@ export function createGame() {
     }
     pet.position.copy(petPos);
     pet.position.y = groundHeight();
-    petComponent.update(mode, total, dt);
+    const lookTargets = [
+      { position: ball.position },
+      { position: feeding.position },
+      { position: new THREE.Vector3(0, 1.6, -3) },
+    ];
+    if (pointerLookUntil > total) lookTargets.push({ position: pointerLook });
+    if (isSound) lookTargets.push({ position: camera.position });
+    petComponent.update(mode, total, dt, { ...motor, groundHeight, lookTargets });
     if (total < bubbleUntil) {
       pet.getWorldPosition(bubbleVector);
       bubbleVector.y += petComponent.height + 0.35;
@@ -431,6 +439,7 @@ export function createGame() {
     obstacles,
     scene,
     renderer,
+    motor,
   };
 
   listen(document, 'keydown', (e) => {

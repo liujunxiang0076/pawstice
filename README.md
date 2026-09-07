@@ -77,6 +77,7 @@ docs/                      架构、产品、美术与验证记录
 - [产品与技术规划](docs/product-tech-plan.md)
 - [视觉设计](docs/visual-design.md)
 - [验证记录](docs/validation.md)
+- [宠物运动与微动作](docs/pet-motion.md)
 - [开发约定](CONTRIBUTING.md)
 
 当前为可玩原型：程序化半写实造型尚非照片级毛发或完整骨骼蒙皮，移动真机性能与长期碰撞压力测试仍需完善。仓库暂未授予开源使用许可。
