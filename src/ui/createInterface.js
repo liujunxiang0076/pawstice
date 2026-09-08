@@ -5,6 +5,7 @@ import {
   normalizePetProfile,
   petPortrait,
   PET_SPECIES,
+  PET_STYLE_PRESETS,
 } from '../features/pet/profile.js';
 import { saveGameState } from '../core/storage.js';
 import { releases } from '../config/releases.js';
@@ -247,25 +248,40 @@ export function createInterface(state, { onPetChanged }) {
     $('.close').focus();
   };
   $('#change').onclick = () => {
-    let selected = state.pet;
+    let selected =
+      PET_STYLE_PRESETS.find((p) => p.species === state.pet && p.fur === state.petProfile.fur)
+        ?.id ?? state.pet;
+    const adoptionCards = PET_STYLE_PRESETS.slice(0, 8)
+      .map(
+        (preset) =>
+          `<button class="pet-option ${selected === preset.id ? 'selected' : ''}" data-pet="${preset.species}" data-style="${preset.id}"><span><img src="${petPortrait(preset)}" alt="${preset.name}"/></span>${preset.name}<small>${PET_SPECIES[preset.species].label} · ${preset.description}</small></button>`,
+      )
+      .join('');
     showModal(
-      `<h2>遇见你的小小家人</h2><p>不同的性格，一样全心全意的陪伴。</p><div class="pet-options"><button class="pet-option ${selected === 'cat' ? 'selected' : ''}" data-pet="cat"><span><img src="./cat-portrait.svg" alt="猫咪"/></span>英国短毛猫<small>安静 · 好奇 · 爱晒太阳</small></button><button class="pet-option ${selected === 'dog' ? 'selected' : ''}" data-pet="dog"><span><img src="./dog-portrait.svg" alt="柴犬"/></span>小柴犬<small>活泼 · 忠诚 · 喜欢玩球</small></button></div><label>给它一个专属的名字</label><input id="name-input" maxlength="12" placeholder="比如：奶糖"/><button class="primary" id="adopt">一起回家</button>`,
+      `<h2>遇见你的小小家人</h2><p>不同的外形，一样全心全意的陪伴。</p><div class="pet-options adoption-options">${adoptionCards}</div><label>给它一个专属的名字</label><input id="name-input" maxlength="12" placeholder="比如：奶糖"/><button class="primary" id="adopt">一起回家</button>`,
     );
     $('#name-input').value = state.name;
     document.querySelectorAll('[data-pet]').forEach(
       (b) =>
         (b.onclick = () => {
-          selected = b.dataset.pet;
+          selected = b.dataset.style;
           document
             .querySelectorAll('[data-pet]')
             .forEach((x) => x.classList.toggle('selected', x === b));
-          $('#name-input').value = selected === 'cat' ? '奶糖' : '布丁';
+          $('#name-input').value =
+            PET_STYLE_PRESETS.find((p) => p.id === selected)?.name ?? '小可爱';
         }),
     );
     $('#adopt').onclick = () => {
-      state.pet = selected;
+      const preset = PET_STYLE_PRESETS.find((p) => p.id === selected);
+      state.pet = preset?.species ?? selected;
       state.name = $('#name-input').value.trim() || '小可爱';
-      state.petProfile = normalizePetProfile({ ...createPetProfile(selected), name: state.name });
+      state.petProfile = normalizePetProfile({
+        ...createPetProfile(state.pet),
+        ...preset,
+        breed: preset.id,
+        name: state.name,
+      });
       onPetChanged();
       updateUI();
       save();

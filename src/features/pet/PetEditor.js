@@ -7,13 +7,26 @@ import {
   PET_SPECIES,
   PATTERNS,
   COAT_PRESETS,
+  PET_STYLE_PRESETS,
   parsePetProfile,
   serializePetProfile,
+  petPortrait,
 } from './profile.js';
 import './pet-editor.css';
 
 /** Isolated draft and WebGL preview; no access to game state or storage. */
 export function openPetEditor({ profile, onSave, onClose = () => {} }) {
+  const styleSections = [
+    ['dog', '狗狗样式', 'Dogs'],
+    ['cat', '猫咪样式', 'Cats'],
+  ];
+  const detailTiles = [
+    ['眼睛', '灵动眼神', 'eyes'],
+    ['鼻子', '真实鼻尖', 'nose'],
+    ['毛发', '细腻毛色', 'fur'],
+  ];
+  const styleButton = (preset) =>
+    `<button type="button" class="pet-style-card" data-style="${preset.id}" aria-pressed="false"><span class="style-portrait"><img src="${petPortrait(preset)}" alt="${preset.name}样式"/></span><strong>${preset.name}</strong><small>${preset.description}</small></button>`;
   let draft = normalizePetProfile(profile),
     dirty = false,
     closed = false,
@@ -27,8 +40,8 @@ export function openPetEditor({ profile, onSave, onClose = () => {} }) {
   const overlay = document.createElement('div');
   overlay.className = 'modal-backdrop pet-editor-backdrop';
   overlay.innerHTML = `<section class="pet-editor" role="dialog" aria-modal="true" aria-labelledby="pet-editor-title">
-    <div class="pet-editor-heading"><div><small>CHARACTER ATELIER / 01</small><h2 id="pet-editor-title">塑造你的独一无二</h2><p>从一抹毛色开始，认识你的小小室友。</p></div><button type="button" class="editor-close" aria-label="关闭宠物编辑器">×</button></div>
-    <div class="pet-editor-grid"><div class="pet-preview-panel"><span class="preview-label">LIVE PORTRAIT · 实时预览</span><canvas aria-label="宠物 3D 预览，拖动可旋转"></canvas><div class="preview-motions">${[
+    <div class="pet-editor-heading"><div><small>PAWSTICE ATELIER / WARM ROOM</small><h2 id="pet-editor-title">不同的陪伴，同样的温暖</h2><p>挑一位小小室友，再用毛色、花纹和动作把它调成你的样子。</p></div><button type="button" class="editor-close" aria-label="关闭宠物编辑器">×</button></div>
+    <div class="pet-editor-grid"><div class="pet-preview-panel"><div class="preview-copy"><span class="preview-label">LIVE 3D PORTRAIT</span><strong id="preview-name"></strong><small id="preview-style"></small></div><canvas aria-label="宠物 3D 预览，拖动可旋转"></canvas><div class="preview-motions">${[
       ['idle', '站立'],
       ['walk', '行走'],
       ['transition', '起步 / 刹停'],
@@ -41,7 +54,7 @@ export function openPetEditor({ profile, onSave, onClose = () => {} }) {
           `<button type="button" data-motion="${id}" aria-pressed="${id === 'idle'}">${label}</button>`,
       )
       .join('')}</div><small class="preview-hint">拖动旋转 · 滚轮 / 双指缩放</small></div>
-    <form class="pet-editor-form"><fieldset><legend>01 / 小小身份</legend><div class="editor-species">${Object.entries(
+    <form class="pet-editor-form"><fieldset class="identity-fieldset"><legend>01 / 小小身份</legend><div class="editor-species">${Object.entries(
       PET_SPECIES,
     )
       .map(
@@ -51,7 +64,17 @@ export function openPetEditor({ profile, onSave, onClose = () => {} }) {
       .join(
         '',
       )}</div><label class="editor-field">名字<input name="name" maxlength="12" required autocomplete="off" /></label></fieldset>
-    <fieldset><legend>02 / 专属色彩</legend><div class="coat-presets">${COAT_PRESETS.map((p, i) => `<button type="button" data-preset="${i}" style="--swatch:${p.fur}" aria-label="${p.name}配色" title="${p.name}配色"><span></span>${p.name}</button>`).join('')}</div><div class="editor-colors">${[
+    <fieldset class="style-fieldset"><legend>02 / 推荐样式</legend><div class="style-sections">${styleSections
+      .map(
+        ([species, title, sub]) =>
+          `<section class="style-section"><div class="style-section-title"><strong>${title}</strong><small>${sub}</small></div><div class="pet-style-grid">${PET_STYLE_PRESETS.filter(
+            (p) => p.species === species,
+          )
+            .map(styleButton)
+            .join('')}</div></section>`,
+      )
+      .join('')}</div></fieldset>
+    <fieldset><legend>03 / 专属色彩</legend><div class="coat-presets">${COAT_PRESETS.map((p, i) => `<button type="button" data-preset="${i}" style="--swatch:${p.fur}" aria-label="${p.name}配色" title="${p.name}配色"><span></span>${p.name}</button>`).join('')}</div><div class="editor-colors">${[
       ['fur', '毛色'],
       ['accent', '点缀色'],
       ['eyes', '眼睛'],
@@ -62,7 +85,7 @@ export function openPetEditor({ profile, onSave, onClose = () => {} }) {
           `<label>${label}<input type="color" name="${id}" aria-label="${label}" /></label>`,
       )
       .join('')}</div></fieldset>
-    <fieldset><legend>03 / 个性细节</legend><label class="editor-field">花纹<select name="pattern">${Object.entries(
+    <fieldset><legend>04 / 个性细节</legend><div class="detail-strip">${detailTiles.map(([title, desc, tone]) => `<span class="detail-tile" data-tone="${tone}"><i></i><b>${title}</b><small>${desc}</small></span>`).join('')}</div><label class="editor-field">花纹<select name="pattern">${Object.entries(
       PATTERNS,
     )
       .map(([id, label]) => `<option value="${id}">${label}</option>`)
@@ -116,7 +139,17 @@ export function openPetEditor({ profile, onSave, onClose = () => {} }) {
           String(COAT_PRESETS[Number(b.dataset.preset)].fur === draft.fur),
         ),
       );
+    overlay
+      .querySelectorAll('[data-style]')
+      .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.style === matchStyle())));
+    $('#preview-name').textContent = draft.name || PET_SPECIES[draft.species].defaultName;
+    $('#preview-style').textContent =
+      `${PET_STYLE_PRESETS.find((preset) => preset.id === draft.breed)?.name ?? PET_SPECIES[draft.species].label} · ${PATTERNS[draft.pattern]}`;
     dirty = true;
+  }
+  function matchStyle() {
+    if (PET_STYLE_PRESETS.some((preset) => preset.id === draft.breed)) return draft.breed;
+    return '';
   }
   try {
     renderer = new THREE.WebGLRenderer({ canvas: $('canvas'), alpha: true, antialias: true });
@@ -221,6 +254,20 @@ export function openPetEditor({ profile, onSave, onClose = () => {} }) {
       const preset = COAT_PRESETS[Number(b.dataset.preset)];
       draft.fur = preset.fur;
       draft.accent = preset.accent;
+      sync();
+      error('');
+    }),
+  );
+  overlay.querySelectorAll('[data-style]').forEach((b) =>
+    listen(b, 'click', () => {
+      const preset = PET_STYLE_PRESETS.find((p) => p.id === b.dataset.style);
+      if (!preset) return;
+      draft = normalizePetProfile({
+        ...draft,
+        ...preset,
+        breed: preset.id,
+        name: draft.name || preset.name,
+      });
       sync();
       error('');
     }),

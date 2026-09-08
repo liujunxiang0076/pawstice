@@ -29,6 +29,141 @@ export const COAT_PRESETS = Object.freeze([
   { name: '雾灰', fur: '#8296a3', accent: '#e7e7df' },
   { name: '墨黑', fur: '#384650', accent: '#e6d9c8' },
 ]);
+export const PET_STYLE_PRESETS = Object.freeze([
+  {
+    id: 'corgi',
+    species: 'dog',
+    name: '柯基',
+    description: '短腿、笑脸、白围脖',
+    fur: '#c87533',
+    accent: '#fff0da',
+    eyes: '#2d221d',
+    pattern: 'socks',
+    collar: true,
+    collarColor: '#b85038',
+    size: 0.9,
+  },
+  {
+    id: 'golden',
+    species: 'dog',
+    name: '金毛',
+    description: '暖金毛色，亲人温顺',
+    fur: '#d99a4f',
+    accent: '#ffe1af',
+    eyes: '#3b2519',
+    pattern: 'solid',
+    collar: true,
+    collarColor: '#497f8e',
+    size: 1,
+  },
+  {
+    id: 'shiba',
+    species: 'dog',
+    name: '柴犬',
+    description: '精神耳朵，奶油白脸',
+    fur: '#bd6f34',
+    accent: '#f5dfc2',
+    eyes: '#2c241f',
+    pattern: 'socks',
+    collar: true,
+    collarColor: '#c25f45',
+    size: 0.95,
+  },
+  {
+    id: 'bichon',
+    species: 'dog',
+    name: '比熊',
+    description: '柔软白毛，圆圆轮廓',
+    fur: '#f4eee3',
+    accent: '#ffffff',
+    eyes: '#1f1b19',
+    pattern: 'solid',
+    collar: true,
+    collarColor: '#6a9ca8',
+    size: 0.86,
+  },
+  {
+    id: 'schnauzer',
+    species: 'dog',
+    name: '雪纳瑞',
+    description: '灰黑毛色，利落眉须',
+    fur: '#5e6265',
+    accent: '#d7d2c8',
+    eyes: '#1d1a17',
+    pattern: 'socks',
+    collar: true,
+    collarColor: '#8f4d3c',
+    size: 0.85,
+  },
+  {
+    id: 'orange-tabby',
+    species: 'cat',
+    name: '橘猫',
+    description: '橘金条纹，眼神清亮',
+    fur: '#d8863c',
+    accent: '#ffdfb2',
+    eyes: '#2d6f8a',
+    pattern: 'stripes',
+    collar: true,
+    collarColor: '#4c91a0',
+    size: 0.9,
+  },
+  {
+    id: 'british-shorthair',
+    species: 'cat',
+    name: '英短',
+    description: '圆脸灰毛，安静好奇',
+    fur: '#7f858b',
+    accent: '#ddd5c8',
+    eyes: '#c89229',
+    pattern: 'solid',
+    collar: false,
+    collarColor: '#cd7854',
+    size: 0.92,
+  },
+  {
+    id: 'silver-tabby',
+    species: 'cat',
+    name: '美短',
+    description: '银灰虎斑，活泼机敏',
+    fur: '#b9b7ae',
+    accent: '#ede5d7',
+    eyes: '#8a6d24',
+    pattern: 'stripes',
+    collar: false,
+    collarColor: '#cd7854',
+    size: 0.88,
+  },
+  {
+    id: 'ragdoll',
+    species: 'cat',
+    name: '布偶猫',
+    description: '奶油长毛，蓝眼温柔',
+    fur: '#ead6bf',
+    accent: '#fff7e8',
+    eyes: '#416e9e',
+    pattern: 'socks',
+    collar: true,
+    collarColor: '#5891a2',
+    size: 1,
+  },
+  {
+    id: 'tuxedo',
+    species: 'cat',
+    name: '奶牛猫',
+    description: '黑白礼服，灵动俏皮',
+    fur: '#1f2326',
+    accent: '#f3eadc',
+    eyes: '#b58a27',
+    pattern: 'socks',
+    collar: false,
+    collarColor: '#cd7854',
+    size: 0.9,
+  },
+]);
+export const PET_BREEDS = Object.freeze(
+  Object.fromEntries(PET_STYLE_PRESETS.map(({ id, species, name }) => [id, { species, name }])),
+);
 const validColor = (value) => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
 const supported = (registry, value) => typeof value === 'string' && Object.hasOwn(registry, value);
 const object = (value) => value && typeof value === 'object' && !Array.isArray(value);
@@ -46,6 +181,7 @@ export function createPetProfile(species = 'cat') {
     collar: false,
     collarColor: '#cd7854',
     size: 1,
+    breed: species === 'dog' ? 'shiba' : 'british-shorthair',
   };
 }
 
@@ -66,6 +202,8 @@ export function normalizePetProfile(input, legacy = {}) {
   if (typeof raw.collar === 'boolean') result.collar = raw.collar;
   if (typeof raw.size === 'number' && Number.isFinite(raw.size))
     result.size = Math.min(1, Math.max(0.8, raw.size));
+  if (supported(PET_BREEDS, raw.breed) && PET_BREEDS[raw.breed].species === species)
+    result.breed = raw.breed;
   return result;
 }
 
@@ -89,6 +227,11 @@ export function parsePetProfile(text) {
     throw new Error('花纹或项圈配置不正确');
   if (typeof raw.size !== 'number' || !Number.isFinite(raw.size) || raw.size < 0.8 || raw.size > 1)
     throw new Error('体型范围为 0.8–1.0');
+  if (
+    raw.breed !== undefined &&
+    (!supported(PET_BREEDS, raw.breed) || PET_BREEDS[raw.breed].species !== raw.species)
+  )
+    throw new Error('宠物品种配置不正确');
   return normalizePetProfile(raw);
 }
 

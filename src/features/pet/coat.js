@@ -23,9 +23,10 @@ export function createCoatTexture(color, pattern = 'solid') {
               10,
             ) * 0.17
           : 0;
-      const grain = (random() - 0.5) * 0.075;
-      const strands = Math.sin(x * 2.5 + Math.sin(y * 0.04) * 1.7) * 0.022;
-      const shade = 0.97 + grain + strands - stripe;
+      const grain = (random() - 0.5) * 0.065;
+      const fine = Math.sin(x * 2.8 + Math.sin(y * 0.045) * 1.9) * 0.024;
+      const long = Math.sin((u + v * 0.35) * Math.PI * 54) * 0.018;
+      const shade = 0.985 + grain + fine + long - stripe;
       const i = (y * size + x) * 4;
       data[i] = Math.min(255, base.r * shade * 255);
       data[i + 1] = Math.min(255, base.g * shade * 255);

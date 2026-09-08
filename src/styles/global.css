@@ -756,6 +756,10 @@ footer svg {
   gap: 12px;
   margin: 22px 0;
 }
+.adoption-options {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
 .pet-option {
   border: 2px solid #cecabc;
   background: #e6ddce;
@@ -778,6 +782,15 @@ footer svg {
   line-height: 1.6;
   margin-top: 8px;
   color: #52646a;
+}
+.adoption-options .pet-option {
+  padding: 12px 6px;
+  min-width: 0;
+  font-size: 12px;
+}
+.adoption-options .pet-option small {
+  min-height: 32px;
+  font-size: 9px;
 }
 .modal input {
   width: 100%;
@@ -1188,6 +1201,9 @@ footer svg {
   }
   .modal {
     padding: 28px 21px;
+  }
+  .adoption-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .close {
     width: 40px;
