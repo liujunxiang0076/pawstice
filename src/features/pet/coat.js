@@ -1,12 +1,18 @@
 import * as THREE from 'three';
 
-/** Deterministic, local short-coat texture. No canvas or downloaded assets. */
-export function createCoatTexture(color, pattern = 'solid') {
+/**
+ * Deterministic, local short-coat texture. It keeps the base pigment, soft
+ * undercoat and markings separate so a tabby reads as fur rather than a noisy
+ * coloured plastic surface. No canvas or downloaded assets are used.
+ */
+export function createCoatTexture(color, pattern = 'solid', undercoat = color) {
   const size = 512,
     data = new Uint8Array(size * size * 4);
   const base = new THREE.Color(color);
+  const under = new THREE.Color(undercoat);
   // Texture bytes are sRGB; Color stores linear values.
   base.convertLinearToSRGB();
+  under.convertLinearToSRGB();
   let seed = 9347;
   const random = () => {
     seed = (seed * 1664525 + 1013904223) >>> 0;
@@ -16,21 +22,24 @@ export function createCoatTexture(color, pattern = 'solid') {
     for (let x = 0; x < size; x++) {
       const u = x / size,
         v = y / size;
-      const stripe =
-        pattern === 'stripes'
-          ? Math.pow(
-              Math.max(0, Math.cos(v * Math.PI * 18 + Math.sin(u * Math.PI * 6) * 1.4)),
-              10,
-            ) * 0.17
-          : 0;
-      const grain = (random() - 0.5) * 0.065;
-      const fine = Math.sin(x * 2.8 + Math.sin(y * 0.045) * 1.9) * 0.024;
-      const long = Math.sin((u + v * 0.35) * Math.PI * 54) * 0.018;
-      const shade = 0.985 + grain + fine + long - stripe;
+      // u follows the circumference of the surface. Its lower half receives
+      // a gentler undercoat, which gives the belly and muzzle their natural
+      // light falloff without needing a separate decal for every mesh.
+      const underside = Math.max(0, -Math.sin(u * Math.PI * 2));
+      const belly = Math.pow(underside, 2.2) * (pattern === 'solid' ? 0.13 : 0.44);
+      const stripeWave = Math.cos(v * Math.PI * 14 + Math.sin(u * Math.PI * 3) * 1.8);
+      const stripe = pattern === 'stripes' ? Math.pow(Math.max(0, stripeWave), 12) * 0.38 : 0;
+      const grain = (random() - 0.5) * 0.035;
+      const fine = Math.sin(x * 2.1 + Math.sin(y * 0.04) * 1.7) * 0.012;
+      const long = Math.sin((u * 0.7 + v * 0.35) * Math.PI * 42) * 0.01;
+      const pigment = 0.985 + grain + fine + long - stripe;
+      const r = THREE.MathUtils.lerp(base.r, under.r, belly) * pigment;
+      const g = THREE.MathUtils.lerp(base.g, under.g, belly) * pigment;
+      const b = THREE.MathUtils.lerp(base.b, under.b, belly) * pigment;
       const i = (y * size + x) * 4;
-      data[i] = Math.min(255, base.r * shade * 255);
-      data[i + 1] = Math.min(255, base.g * shade * 255);
-      data[i + 2] = Math.min(255, base.b * shade * 255);
+      data[i] = Math.min(255, r * 255);
+      data[i + 1] = Math.min(255, g * 255);
+      data[i + 2] = Math.min(255, b * 255);
       data[i + 3] = 255;
     }
   const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);

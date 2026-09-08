@@ -24,8 +24,8 @@ export function createPetRig(profile) {
   const geometries = new Set(),
     materials = new Set(),
     textures = new Set();
-  function coat(color, pattern = 'solid') {
-    const map = createCoatTexture(color, pattern);
+  function coat(color, pattern = 'solid', undercoat = color) {
+    const map = createCoatTexture(color, pattern, undercoat);
     textures.add(map);
     const m = new THREE.MeshStandardMaterial({
       map,
@@ -42,8 +42,8 @@ export function createPetRig(profile) {
     materials.add(m);
     return m;
   }
-  const fur = coat(profile.fur),
-    bodyFur = profile.pattern === 'stripes' ? coat(profile.fur, 'stripes') : fur,
+  const fur = coat(profile.fur, profile.pattern, profile.accent),
+    bodyFur = fur,
     cream = coat(profile.accent);
   const innerEar = surface('#a77872'),
     noseMat = surface(cat ? '#806261' : '#252827', 0.3);
